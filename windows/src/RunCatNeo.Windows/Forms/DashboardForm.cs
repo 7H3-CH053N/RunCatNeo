@@ -32,6 +32,13 @@ public sealed class DashboardForm : Form
         ShowInTaskbar = false;
         content = new DashboardContentPanel(context) { Dock = DockStyle.Fill };
         Controls.Add(content);
+        BackColor = Theme.WindowBackground;
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        Theme.ApplyTitleBar(this);
     }
 
     protected override void OnShown(EventArgs e)

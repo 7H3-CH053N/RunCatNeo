@@ -39,7 +39,8 @@ public sealed class CustomMetricsCardPanel : Panel
     {
         this.bundle = bundle;
         DoubleBuffered = true;
-        BackColor = Color.FromArgb(245, 245, 245);
+        BackColor = Theme.PanelBackground;
+        ForeColor = Theme.Text;
         BorderStyle = BorderStyle.FixedSingle;
         Width = width;
         Height = PreferredCardHeight(bundle);
@@ -88,7 +89,7 @@ public sealed class CustomMetricsCardPanel : Panel
             if (metric.NormalizedValue is { } normalizedValue)
             {
                 var clamped = (float)Math.Clamp(normalizedValue, 0.0, 1.0);
-                using var trackBrush = new SolidBrush(Color.FromArgb(220, 220, 220));
+                using var trackBrush = new SolidBrush(Theme.GraphTrack);
                 graphics.FillRectangle(trackBrush, x, y, contentWidth, BarHeight);
                 using var barBrush = new SolidBrush(Color.SteelBlue);
                 graphics.FillRectangle(barBrush, x, y, contentWidth * clamped, BarHeight);
@@ -102,7 +103,7 @@ public sealed class CustomMetricsCardPanel : Panel
         TextRenderer.DrawText(
             graphics, footerText, Font,
             new Rectangle(x, y, contentWidth, FooterHeight),
-            bundle.IsFailed ? Color.Firebrick : Color.Gray, TextFormatFlags.Left
+            bundle.IsFailed ? Theme.ErrorText : Theme.SubtleText, TextFormatFlags.Left
         );
     }
 }

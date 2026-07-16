@@ -32,7 +32,7 @@ public sealed class LineGraphPanel : Panel
     public LineGraphPanel()
     {
         DoubleBuffered = true;
-        BackColor = Color.FromArgb(245, 245, 245);
+        BackColor = Theme.PanelBackground;
         BorderStyle = BorderStyle.FixedSingle;
     }
 

@@ -68,6 +68,7 @@ public sealed class DashboardContentPanel : Panel
         customMetricsPanel.Dock = DockStyle.Fill;
         layout.Controls.Add(customMetricsPanel);
         Controls.Add(layout);
+        Theme.Apply(this);
     }
 
     public void RefreshMetrics()

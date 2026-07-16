@@ -53,8 +53,15 @@ public sealed class SettingsForm : Form
         ShowInTaskbar = false;
 
         BuildLayout();
+        Theme.Apply(this);
         LoadState();
         isLoading = false;
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        Theme.ApplyTitleBar(this);
     }
 
     private void BuildLayout()
@@ -240,7 +247,7 @@ public sealed class SettingsForm : Form
         var runner = runners[runnerListBox.SelectedIndex];
         try
         {
-            previewPanel.SetFrames(context.FrameProvider.LoadFrames(runner));
+            previewPanel.SetFrames(context.FrameProvider.LoadFrames(runner), runner.IsTemplate);
         }
         catch (FileNotFoundException)
         {

@@ -47,6 +47,7 @@ public sealed class TrayAppContext : ApplicationContext
     private DashboardPopupForm? popupForm;
     private SettingsForm? settingsForm;
     private readonly System.Windows.Forms.Timer hoverTimer = new() { Interval = 250 };
+    private readonly System.Windows.Forms.Timer popupDelayTimer = new() { Interval = 450 };
     private DateTime lastTrayHover = DateTime.MinValue;
 
     public AppSettings Settings => settingsStore.Settings;
@@ -77,8 +78,10 @@ public sealed class TrayAppContext : ApplicationContext
             ShowDashboard();
         };
         notifyIcon.MouseMove += (_, _) => OnTrayHover();
+        notifyIcon.MouseDown += (_, _) => HidePopup();
         notifyIcon.ContextMenuStrip.Opening += (_, _) => HidePopup();
         hoverTimer.Tick += (_, _) => HidePopupWhenCursorLeaves();
+        popupDelayTimer.Tick += (_, _) => ShowPopupAfterDelay();
 
         ApplySystemMetricsConfiguration();
         ApplyRunner(ResolveConfiguredRunner());
@@ -207,19 +210,36 @@ public sealed class TrayAppContext : ApplicationContext
     }
 
     // The hover popup: NotifyIcon.MouseMove fires while the cursor is over the
-    // tray icon; a low-frequency timer hides the popup once the cursor has left
-    // both the icon (no recent MouseMove) and the popup itself.
+    // tray icon. The popup only opens once the hover has lasted the delay
+    // interval, so a quick click on the icon (e.g. for the context menu) is not
+    // obstructed. A low-frequency timer hides the popup once the cursor has
+    // left both the icon (no recent MouseMove) and the popup itself.
     private void OnTrayHover()
     {
         lastTrayHover = DateTime.UtcNow;
+        if (popupForm is { IsDisposed: false, Visible: true })
+        {
+            return;
+        }
+        if (!popupDelayTimer.Enabled)
+        {
+            popupDelayTimer.Start();
+        }
+    }
+
+    private void ShowPopupAfterDelay()
+    {
+        popupDelayTimer.Stop();
+        // Only show if the cursor is still hovering over the icon.
+        if (DateTime.UtcNow - lastTrayHover > TimeSpan.FromMilliseconds(300))
+        {
+            return;
+        }
         if (popupForm is null || popupForm.IsDisposed)
         {
             popupForm = new DashboardPopupForm(this);
         }
-        if (!popupForm.Visible)
-        {
-            popupForm.ShowAt(Cursor.Position);
-        }
+        popupForm.ShowAt(Cursor.Position);
         hoverTimer.Start();
     }
 
@@ -245,6 +265,7 @@ public sealed class TrayAppContext : ApplicationContext
 
     private void HidePopup()
     {
+        popupDelayTimer.Stop();
         hoverTimer.Stop();
         if (popupForm is { IsDisposed: false, Visible: true })
         {
@@ -300,7 +321,7 @@ public sealed class TrayAppContext : ApplicationContext
         CustomMetricsService.Configure(Settings.CustomMetricsConfiguration);
     }
 
-    private void ShowDashboard()
+    public void ShowDashboard()
     {
         if (dashboardForm is null || dashboardForm.IsDisposed)
         {
@@ -310,7 +331,7 @@ public sealed class TrayAppContext : ApplicationContext
         dashboardForm.Activate();
     }
 
-    private void ShowSettings()
+    public void ShowSettings()
     {
         if (settingsForm is null || settingsForm.IsDisposed)
         {
@@ -355,6 +376,7 @@ public sealed class TrayAppContext : ApplicationContext
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         CustomMetricsService.Dispose();
         hoverTimer.Stop();
+        popupDelayTimer.Stop();
         popupForm?.Dispose();
         animationTimer.Stop();
         metricsTimer.Stop();

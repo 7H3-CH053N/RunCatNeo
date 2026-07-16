@@ -18,22 +18,41 @@
  */
 
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 
 namespace RunCatNeo.Windows.Forms;
 
 // Animates a runner's frames at the base speed, mirroring RunnerPreviewView.
 public sealed class RunnerPreviewPanel : Panel
 {
+    // Recolors every pixel to white while preserving alpha, so template frames
+    // (black shapes) stay visible on the dark theme's background.
+    private static readonly ImageAttributes WhiteTint = CreateWhiteTint();
+
+    private static ImageAttributes CreateWhiteTint()
+    {
+        var attributes = new ImageAttributes();
+        attributes.SetColorMatrix(new ColorMatrix([
+            [0f, 0f, 0f, 0f, 0f],
+            [0f, 0f, 0f, 0f, 0f],
+            [0f, 0f, 0f, 0f, 0f],
+            [0f, 0f, 0f, 1f, 0f],
+            [1f, 1f, 1f, 0f, 1f],
+        ]));
+        return attributes;
+    }
+
     private readonly System.Windows.Forms.Timer timer = new();
     private IReadOnlyList<Bitmap> frames = [];
     private int frameIndex;
+    private bool isTemplate = true;
 
     public bool IsFlipped { get; set; }
 
     public RunnerPreviewPanel()
     {
         DoubleBuffered = true;
-        BackColor = Color.FromArgb(245, 245, 245);
+        BackColor = Theme.PanelBackground;
         BorderStyle = BorderStyle.FixedSingle;
         timer.Interval = (int)(RunCatNeo.Core.RunnerSpeed.BaseFrameDuration * 1000);
         timer.Tick += (_, _) =>
@@ -47,10 +66,11 @@ public sealed class RunnerPreviewPanel : Panel
         timer.Start();
     }
 
-    public void SetFrames(IReadOnlyList<Bitmap> newFrames)
+    public void SetFrames(IReadOnlyList<Bitmap> newFrames, bool isTemplate = true)
     {
         var oldFrames = frames.Distinct().ToArray();
         frames = newFrames;
+        this.isTemplate = isTemplate;
         frameIndex = 0;
         Invalidate();
         foreach (var frame in oldFrames)
@@ -82,7 +102,23 @@ public sealed class RunnerPreviewPanel : Panel
             e.Graphics.TranslateTransform(ClientSize.Width, 0f);
             e.Graphics.ScaleTransform(-1f, 1f);
         }
-        e.Graphics.DrawImage(frame, x, y, width, height);
+        if (isTemplate && !Theme.IsAppsLight())
+        {
+            var destination = new RectangleF(x, y, width, height);
+            e.Graphics.DrawImage(
+                frame,
+                [destination.Location,
+                 new PointF(destination.Right, destination.Top),
+                 new PointF(destination.Left, destination.Bottom)],
+                new RectangleF(0f, 0f, frame.Width, frame.Height),
+                GraphicsUnit.Pixel,
+                WhiteTint
+            );
+        }
+        else
+        {
+            e.Graphics.DrawImage(frame, x, y, width, height);
+        }
     }
 
     protected override void Dispose(bool disposing)

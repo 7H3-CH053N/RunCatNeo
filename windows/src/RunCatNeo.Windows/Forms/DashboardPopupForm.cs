@@ -47,11 +47,42 @@ public sealed class DashboardPopupForm : Form
         StartPosition = FormStartPosition.Manual;
         TopMost = true;
         ShowInTaskbar = false;
-        ClientSize = new Size(360, 540);
-        BackColor = SystemColors.Window;
+        ClientSize = new Size(360, 580);
+        BackColor = Theme.WindowBackground;
         Padding = new Padding(1);
+
+        // Footer with quick actions, so settings are reachable without
+        // fighting the popup for the tray icon's context menu.
+        var footer = new Panel { Dock = DockStyle.Bottom, Height = 40, Padding = new Padding(8) };
+        var settingsButton = new Button
+        {
+            Text = Strings.Get("settings"),
+            Dock = DockStyle.Left,
+            Width = 130,
+        };
+        settingsButton.Click += (_, _) =>
+        {
+            Hide();
+            context.ShowSettings();
+        };
+        var dashboardButton = new Button
+        {
+            Text = Strings.Get("dashboard"),
+            Dock = DockStyle.Right,
+            Width = 130,
+        };
+        dashboardButton.Click += (_, _) =>
+        {
+            Hide();
+            context.ShowDashboard();
+        };
+        footer.Controls.Add(settingsButton);
+        footer.Controls.Add(dashboardButton);
+
         content = new DashboardContentPanel(context) { Dock = DockStyle.Fill };
         Controls.Add(content);
+        Controls.Add(footer);
+        Theme.Apply(this);
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -60,7 +91,7 @@ public sealed class DashboardPopupForm : Form
         var border = ClientRectangle;
         border.Width -= 1;
         border.Height -= 1;
-        using var pen = new Pen(SystemColors.ControlDark);
+        using var pen = new Pen(Theme.Border);
         e.Graphics.DrawRectangle(pen, border);
     }
 

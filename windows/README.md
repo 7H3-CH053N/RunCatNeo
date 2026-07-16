@@ -18,6 +18,11 @@ macOS original (speed factor = CPU % / 5, clamped to 1…20, at a base rate of 2
 - Custom runners: drop PNG key frames into `%APPDATA%\RunCatNeo\Runners\<id>\frame-<n>.png`
   and describe them in `%APPDATA%\RunCatNeo\Runners\custom-runners.json` using the same JSON
   shape the macOS app persists (`{"id", "name", "isTemplate", "frameOrder": [0, 1, ...]}`).
+- Custom metrics: point the app at any local JSON file in the
+  [documented format](../docs/CustomMetricsSchema.md) (Settings → Custom Metrics →
+  Add JSON Source) and it renders as a card on the dashboard, updating on file changes.
+  The bundled [Claude Code statusLine sample](../docs/samples/claude-code/) works on
+  Windows unchanged — it writes to `%USERPROFILE%\.claude\runcat-usage.json`.
 
 ## Requirements
 
@@ -59,8 +64,7 @@ dotnet test
 ## Not (yet) ported
 
 - Metrics bar (the secondary menu-bar item) — Windows tray icons cannot render wide
-  multi-indicator items.
-- Custom metrics JSON cards on the dashboard.
+  multi-indicator items. (`metricsBarValue` in custom metrics JSON is consequently ignored.)
 - In-app custom runner editor (custom runners are supported via the file format above).
 - Donation settings (App Store specific).
 

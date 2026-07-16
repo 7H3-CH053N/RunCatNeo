@@ -34,6 +34,9 @@ public sealed class SettingsForm : Form
     private readonly CheckBox monitorsStorageCheckBox = new();
     private readonly CheckBox monitorsBatteryCheckBox = new();
     private readonly CheckBox monitorsNetworkCheckBox = new();
+    private readonly ListBox customMetricsListBox = new();
+    private readonly Button addSourceButton = new();
+    private readonly Button removeSourceButton = new();
 
     private IReadOnlyList<Runner> runners = [];
     private bool isLoading = true;
@@ -46,7 +49,7 @@ public sealed class SettingsForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(460, 470);
+        ClientSize = new Size(460, 640);
         ShowInTaskbar = false;
 
         BuildLayout();
@@ -133,9 +136,65 @@ public sealed class SettingsForm : Form
             metricsGroup.Controls.Add(checkBox);
         }
 
+        var customMetricsGroup = new GroupBox
+        {
+            Text = Strings.Get("customMetrics"),
+            Bounds = new Rectangle(12, 466, 436, 160),
+        };
+        customMetricsListBox.Bounds = new Rectangle(12, 24, 412, 90);
+        customMetricsListBox.HorizontalScrollbar = true;
+        addSourceButton.Text = Strings.Get("addJsonSource");
+        addSourceButton.Bounds = new Rectangle(12, 122, 180, 26);
+        addSourceButton.Click += (_, _) => OnAddCustomMetricsSource();
+        removeSourceButton.Text = Strings.Get("removeSource");
+        removeSourceButton.Bounds = new Rectangle(200, 122, 120, 26);
+        removeSourceButton.Click += (_, _) => OnRemoveCustomMetricsSource();
+        customMetricsGroup.Controls.Add(customMetricsListBox);
+        customMetricsGroup.Controls.Add(addSourceButton);
+        customMetricsGroup.Controls.Add(removeSourceButton);
+
         Controls.Add(runnerGroup);
         Controls.Add(generalGroup);
         Controls.Add(metricsGroup);
+        Controls.Add(customMetricsGroup);
+    }
+
+    private void RefreshCustomMetricsSources()
+    {
+        customMetricsListBox.Items.Clear();
+        foreach (var source in context.Settings.CustomMetricsConfiguration.Sources)
+        {
+            var errorSuffix = context.CustomMetricsService.HasError(source.Id)
+                ? $"  {Strings.Get("errorDetected")}"
+                : "";
+            customMetricsListBox.Items.Add($"{source.DisplayName} — {source.FilePath}{errorSuffix}");
+        }
+    }
+
+    private void OnAddCustomMetricsSource()
+    {
+        using var dialog = new OpenFileDialog
+        {
+            Filter = "JSON (*.json)|*.json|All files (*.*)|*.*",
+            CheckFileExists = true,
+        };
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            context.AddCustomMetricsSource(dialog.FileName);
+            RefreshCustomMetricsSources();
+        }
+    }
+
+    private void OnRemoveCustomMetricsSource()
+    {
+        var index = customMetricsListBox.SelectedIndex;
+        var sources = context.Settings.CustomMetricsConfiguration.Sources;
+        if (index < 0 || index >= sources.Count)
+        {
+            return;
+        }
+        context.RemoveCustomMetricsSource(sources[index].Id);
+        RefreshCustomMetricsSources();
     }
 
     private void LoadState()
@@ -161,6 +220,7 @@ public sealed class SettingsForm : Form
         monitorsBatteryCheckBox.Checked = configuration.MonitorsBattery;
         monitorsNetworkCheckBox.Checked = configuration.MonitorsNetwork;
         previewPanel.IsFlipped = context.Settings.IsFlippedHorizontally;
+        RefreshCustomMetricsSources();
     }
 
     private void Apply(Action action)

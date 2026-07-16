@@ -29,6 +29,7 @@ public sealed class AppSettings
     public bool IsFlippedHorizontally { get; set; }
     public int UpdateIntervalSeconds { get; set; } = UpdateIntervalExtensions.Default.Seconds();
     public SystemMetricsConfiguration SystemMetricsConfiguration { get; set; } = SystemMetricsConfiguration.Default;
+    public CustomMetricsConfiguration CustomMetricsConfiguration { get; set; } = CustomMetricsConfiguration.Empty;
 
     [JsonIgnore]
     public UpdateInterval UpdateInterval

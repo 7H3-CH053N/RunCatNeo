@@ -29,6 +29,7 @@ public sealed class DashboardForm : Form
     private readonly Label storageLabel = new();
     private readonly Label networkLabel = new();
     private readonly Label batteryLabel = new();
+    private readonly FlowLayoutPanel customMetricsPanel = new();
 
     public DashboardForm(TrayAppContext context)
     {
@@ -36,7 +37,7 @@ public sealed class DashboardForm : Form
         Text = $"RunCat Neo — {Strings.Get("dashboard")}";
         FormBorderStyle = FormBorderStyle.FixedToolWindow;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(380, 430);
+        ClientSize = new Size(380, 560);
         ShowInTaskbar = false;
 
         var layout = new TableLayoutPanel
@@ -64,9 +65,32 @@ public sealed class DashboardForm : Form
         AddRow(storageLabel, 24);
         AddRow(networkLabel, 24);
         AddRow(batteryLabel, 24);
+        customMetricsPanel.FlowDirection = FlowDirection.TopDown;
+        customMetricsPanel.WrapContents = false;
+        customMetricsPanel.AutoScroll = true;
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+        customMetricsPanel.Dock = DockStyle.Fill;
+        layout.Controls.Add(customMetricsPanel);
         Controls.Add(layout);
 
         RefreshMetrics();
+        RefreshCustomMetrics();
+    }
+
+    // Rebuilds the custom metrics cards; called when a watched JSON file changes.
+    public void RefreshCustomMetrics()
+    {
+        customMetricsPanel.SuspendLayout();
+        customMetricsPanel.Controls.Clear();
+        var cardWidth = customMetricsPanel.ClientSize.Width - 24;
+        foreach (var bundle in context.CustomMetricsService.Bundles)
+        {
+            customMetricsPanel.Controls.Add(new CustomMetricsCardPanel(bundle, cardWidth)
+            {
+                Margin = new Padding(0, 0, 0, 8),
+            });
+        }
+        customMetricsPanel.ResumeLayout();
     }
 
     public void RefreshMetrics()
@@ -102,5 +126,10 @@ public sealed class DashboardForm : Form
             ? $"{Strings.Get("battery")}: {batteryInfo.Percentage:F0} %" +
                 (batteryInfo.IsCharging ? $" ({Strings.Get("charging")})" : "")
             : $"{Strings.Get("battery")}: —";
+
+        foreach (var card in customMetricsPanel.Controls.OfType<CustomMetricsCardPanel>())
+        {
+            card.Invalidate();
+        }
     }
 }

@@ -52,6 +52,16 @@ public static class Strings
         ["monitorsStorage"] = "Monitor storage",
         ["monitorsBattery"] = "Monitor battery",
         ["monitorsNetwork"] = "Monitor network",
+        ["customMetrics"] = "Custom Metrics",
+        ["addJsonSource"] = "Add JSON Source…",
+        ["removeSource"] = "Remove",
+        ["errorDetected"] = "⚠ Error Detected",
+        ["lastUpdated"] = "Last updated",
+        ["failed"] = "Failed",
+        ["justNow"] = "just now",
+        ["minutesAgo"] = "{0} min ago",
+        ["hoursAgo"] = "{0} h ago",
+        ["daysAgo"] = "{0} d ago",
         ["aboutBody"] = "RunCat Neo for Windows\nA cute running cat animation in your system tray.\n\nThis app is open-source software.\nhttps://github.com/runcat-dev/RunCatNeo",
     };
 
@@ -84,6 +94,16 @@ public static class Strings
         ["monitorsStorage"] = "Festplatte überwachen",
         ["monitorsBattery"] = "Batterie überwachen",
         ["monitorsNetwork"] = "Netzwerk überwachen",
+        ["customMetrics"] = "Custom Metrics",
+        ["addJsonSource"] = "JSON-Quelle hinzufügen…",
+        ["removeSource"] = "Entfernen",
+        ["errorDetected"] = "⚠ Fehler erkannt",
+        ["lastUpdated"] = "Zuletzt aktualisiert",
+        ["failed"] = "Fehlgeschlagen",
+        ["justNow"] = "gerade eben",
+        ["minutesAgo"] = "vor {0} Min.",
+        ["hoursAgo"] = "vor {0} Std.",
+        ["daysAgo"] = "vor {0} Tagen",
         ["aboutBody"] = "RunCat Neo für Windows\nEine niedliche laufende Katze in deiner Taskleiste.\n\nDiese App ist Open-Source-Software.\nhttps://github.com/runcat-dev/RunCatNeo",
     };
 

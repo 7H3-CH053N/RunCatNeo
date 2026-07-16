@@ -23,6 +23,25 @@ A minimal Python script that lets RunCat Neo's Custom Metrics card show your Cla
 4. Run Claude Code. The card updates each turn.
 5. Optional: click the Metrics Bar and flip the source's toggle to show the context usage (`metricsBarValue`) directly in the menu bar.
 
+## Windows (RunCat Neo for Windows)
+
+The script is cross-platform. On Windows (with [Python 3](https://www.python.org/downloads/) installed):
+
+1. Copy `runcat-statusline.py` to `%USERPROFILE%\.claude\runcat-statusline.py`.
+2. Register it in `%USERPROFILE%\.claude\settings.json`:
+   ```json
+   {
+     "statusLine": {
+       "type": "command",
+       "command": "python C:\\Users\\YOU\\.claude\\runcat-statusline.py"
+     }
+   }
+   ```
+3. In RunCat Neo for Windows, open **Settings → Custom Metrics → Add JSON Source…** and
+   choose `%USERPROFILE%\.claude\runcat-usage.json`. The card appears on the dashboard.
+
+Note: the Windows port has no Metrics Bar, so `metricsBarValue` is ignored there.
+
 ## Already have a statusLine?
 
 `~/.claude/settings.json` only allows a single `statusLine.command`, so combine yours and this one yourself. Asking Claude works well: "Here's my existing statusline script and the RunCat sample — write me one that does both" usually produces a clean merge in one shot.

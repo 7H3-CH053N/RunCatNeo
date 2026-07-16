@@ -47,6 +47,7 @@ public sealed class TrayAppContext : ApplicationContext
     private SettingsForm? settingsForm;
 
     public AppSettings Settings => settingsStore.Settings;
+    public CustomMetricsService CustomMetricsService { get; } = new();
     public SystemInfoBundle LatestBundle => latestBundle;
     public RingBuffer CpuRingBuffer => cpuRingBuffer;
     public RingBuffer MemoryRingBuffer => memoryRingBuffer;
@@ -71,6 +72,8 @@ public sealed class TrayAppContext : ApplicationContext
 
         ApplySystemMetricsConfiguration();
         ApplyRunner(ResolveConfiguredRunner());
+        CustomMetricsService.Configure(Settings.CustomMetricsConfiguration);
+        CustomMetricsService.BundlesChanged += () => dashboardForm?.RefreshCustomMetrics();
 
         animationTimer.Tick += (_, _) => AdvanceFrame();
         metricsTimer.Tick += (_, _) => UpdateMetrics();
@@ -203,6 +206,34 @@ public sealed class TrayAppContext : ApplicationContext
         settingsStore.Save();
     }
 
+    public void AddCustomMetricsSource(string filePath)
+    {
+        var source = new CustomMetricsSource
+        {
+            DisplayName = Path.GetFileNameWithoutExtension(filePath),
+            FilePath = filePath,
+            CreatedAt = DateTimeOffset.Now,
+        };
+        var configuration = Settings.CustomMetricsConfiguration;
+        Settings.CustomMetricsConfiguration = configuration with
+        {
+            Sources = [.. configuration.Sources, source],
+        };
+        settingsStore.Save();
+        CustomMetricsService.Configure(Settings.CustomMetricsConfiguration);
+    }
+
+    public void RemoveCustomMetricsSource(Guid sourceId)
+    {
+        var configuration = Settings.CustomMetricsConfiguration;
+        Settings.CustomMetricsConfiguration = configuration with
+        {
+            Sources = configuration.Sources.Where(source => source.Id != sourceId).ToArray(),
+        };
+        settingsStore.Save();
+        CustomMetricsService.Configure(Settings.CustomMetricsConfiguration);
+    }
+
     private void ShowDashboard()
     {
         if (dashboardForm is null || dashboardForm.IsDisposed)
@@ -256,6 +287,7 @@ public sealed class TrayAppContext : ApplicationContext
     private void Cleanup()
     {
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
+        CustomMetricsService.Dispose();
         animationTimer.Stop();
         metricsTimer.Stop();
         notifyIcon.Visible = false;

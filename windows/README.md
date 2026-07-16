@@ -11,7 +11,9 @@ macOS original (speed factor = CPU % / 5, clamped to 1…20, at a base rate of 2
 - All eight built-in runners from the macOS app (cat, dog, slime, drop, coffee,
   Newton's cradle, engine, mochi), using the identical frame images and frame orders.
 - Animation speed follows CPU usage; optional "speed decreases under load" mode.
-- Dashboard with CPU and memory line graphs plus storage, network, and battery info.
+- Dashboard with CPU and memory line graphs plus storage, network, and battery info —
+  shown as a popup when hovering over the tray icon (like the macOS popover) and as a
+  regular window on double-click.
 - Settings: runner picker with live preview, launch at login, horizontal flip,
   update interval (3/5/10 s), and per-metric monitoring toggles.
 - Light/dark taskbar aware: template runners are tinted black or white automatically.

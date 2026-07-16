@@ -44,7 +44,10 @@ public sealed class TrayAppContext : ApplicationContext
     private int frameIndex;
     private SystemInfoBundle latestBundle = new();
     private DashboardForm? dashboardForm;
+    private DashboardPopupForm? popupForm;
     private SettingsForm? settingsForm;
+    private readonly System.Windows.Forms.Timer hoverTimer = new() { Interval = 250 };
+    private DateTime lastTrayHover = DateTime.MinValue;
 
     public AppSettings Settings => settingsStore.Settings;
     public CustomMetricsService CustomMetricsService { get; } = new();
@@ -68,12 +71,26 @@ public sealed class TrayAppContext : ApplicationContext
             Visible = true,
             ContextMenuStrip = BuildMenu(),
         };
-        notifyIcon.DoubleClick += (_, _) => ShowDashboard();
+        notifyIcon.DoubleClick += (_, _) =>
+        {
+            HidePopup();
+            ShowDashboard();
+        };
+        notifyIcon.MouseMove += (_, _) => OnTrayHover();
+        notifyIcon.ContextMenuStrip.Opening += (_, _) => HidePopup();
+        hoverTimer.Tick += (_, _) => HidePopupWhenCursorLeaves();
 
         ApplySystemMetricsConfiguration();
         ApplyRunner(ResolveConfiguredRunner());
         CustomMetricsService.Configure(Settings.CustomMetricsConfiguration);
-        CustomMetricsService.BundlesChanged += () => dashboardForm?.RefreshCustomMetrics();
+        CustomMetricsService.BundlesChanged += () =>
+        {
+            dashboardForm?.RefreshCustomMetrics();
+            if (popupForm is { IsDisposed: false, Visible: true })
+            {
+                popupForm.RefreshCustomMetrics();
+            }
+        };
 
         animationTimer.Tick += (_, _) => AdvanceFrame();
         metricsTimer.Tick += (_, _) => UpdateMetrics();
@@ -182,8 +199,57 @@ public sealed class TrayAppContext : ApplicationContext
         {
             animationTimer.Start();
         }
-        notifyIcon.Text = $"RunCat Neo — CPU {latestBundle.CpuPercentage:F1} %";
         dashboardForm?.RefreshMetrics();
+        if (popupForm is { IsDisposed: false, Visible: true })
+        {
+            popupForm.RefreshMetrics();
+        }
+    }
+
+    // The hover popup: NotifyIcon.MouseMove fires while the cursor is over the
+    // tray icon; a low-frequency timer hides the popup once the cursor has left
+    // both the icon (no recent MouseMove) and the popup itself.
+    private void OnTrayHover()
+    {
+        lastTrayHover = DateTime.UtcNow;
+        if (popupForm is null || popupForm.IsDisposed)
+        {
+            popupForm = new DashboardPopupForm(this);
+        }
+        if (!popupForm.Visible)
+        {
+            popupForm.ShowAt(Cursor.Position);
+        }
+        hoverTimer.Start();
+    }
+
+    private void HidePopupWhenCursorLeaves()
+    {
+        if (popupForm is not { IsDisposed: false, Visible: true })
+        {
+            hoverTimer.Stop();
+            return;
+        }
+        var popupBounds = popupForm.Bounds;
+        popupBounds.Inflate(12, 12);
+        if (popupBounds.Contains(Cursor.Position))
+        {
+            return;
+        }
+        if (DateTime.UtcNow - lastTrayHover < TimeSpan.FromMilliseconds(600))
+        {
+            return;
+        }
+        HidePopup();
+    }
+
+    private void HidePopup()
+    {
+        hoverTimer.Stop();
+        if (popupForm is { IsDisposed: false, Visible: true })
+        {
+            popupForm.Hide();
+        }
     }
 
     public void ApplyUpdateInterval()
@@ -288,6 +354,8 @@ public sealed class TrayAppContext : ApplicationContext
     {
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         CustomMetricsService.Dispose();
+        hoverTimer.Stop();
+        popupForm?.Dispose();
         animationTimer.Stop();
         metricsTimer.Stop();
         notifyIcon.Visible = false;

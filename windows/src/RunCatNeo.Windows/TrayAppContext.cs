@@ -49,6 +49,8 @@ public sealed class TrayAppContext : ApplicationContext
     private readonly System.Windows.Forms.Timer hoverTimer = new() { Interval = 250 };
     private readonly System.Windows.Forms.Timer popupDelayTimer = new() { Interval = 450 };
     private DateTime lastTrayHover = DateTime.MinValue;
+    private Point popupAnchor;
+    private int popupMissCount;
 
     public AppSettings Settings => settingsStore.Settings;
     public CustomMetricsService CustomMetricsService { get; } = new();
@@ -239,7 +241,9 @@ public sealed class TrayAppContext : ApplicationContext
         {
             popupForm = new DashboardPopupForm(this);
         }
-        popupForm.ShowAt(Cursor.Position);
+        popupAnchor = Cursor.Position;
+        popupMissCount = 0;
+        popupForm.ShowAt(popupAnchor);
         hoverTimer.Start();
     }
 
@@ -250,17 +254,25 @@ public sealed class TrayAppContext : ApplicationContext
             hoverTimer.Stop();
             return;
         }
+        // Keep the popup open while the cursor is inside it, still over the
+        // tray icon (a stationary cursor produces no further MouseMove events,
+        // so the anchor area stands in for the icon), or traveling between the
+        // two. Hide only after the cursor has stayed outside for two ticks.
         var popupBounds = popupForm.Bounds;
-        popupBounds.Inflate(12, 12);
-        if (popupBounds.Contains(Cursor.Position))
+        popupBounds.Inflate(16, 16);
+        var anchorArea = new Rectangle(popupAnchor.X - 40, popupAnchor.Y - 40, 80, 80);
+        var keepArea = Rectangle.Union(popupBounds, anchorArea);
+        if (keepArea.Contains(Cursor.Position) ||
+            DateTime.UtcNow - lastTrayHover < TimeSpan.FromMilliseconds(600))
         {
+            popupMissCount = 0;
             return;
         }
-        if (DateTime.UtcNow - lastTrayHover < TimeSpan.FromMilliseconds(600))
+        popupMissCount += 1;
+        if (popupMissCount >= 2)
         {
-            return;
+            HidePopup();
         }
-        HidePopup();
     }
 
     private void HidePopup()
